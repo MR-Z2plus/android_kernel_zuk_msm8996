@@ -1629,7 +1629,6 @@ int msm_isp_cal_word_per_line(uint32_t output_format,
 	case V4L2_PIX_FMT_SGRBG10:
 	case V4L2_PIX_FMT_SRGGB10:
 	case V4L2_PIX_FMT_Y10:
-	case V4L2_PIX_FMT_META10:
 		val = CAL_WORD(pixel_per_line, 5, 32);
 		break;
 	case V4L2_PIX_FMT_SBGGR12:
