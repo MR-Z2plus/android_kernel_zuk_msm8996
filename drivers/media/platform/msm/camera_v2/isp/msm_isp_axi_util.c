@@ -1603,6 +1603,7 @@ static struct msm_isp_buffer *msm_isp_get_stream_buffer(
 	struct msm_isp_buffer *buf = NULL;
 	struct msm_vfe_axi_stream *temp_stream_info = NULL;
 	struct msm_vfe_frame_request_queue *queue_req;
+	uint32_t buf_index = MSM_ISP_INVALID_BUF_INDEX;
 
 	if (!stream_info->controllable_output) {
 		bufq_handle = stream_info->bufq_handle
@@ -1625,12 +1626,13 @@ static struct msm_isp_buffer *msm_isp_get_stream_buffer(
 			__func__);
 			return buf;
 		}
+		buf_index = queue_req->buf_index;
 		queue_req->cmd_used = 0;
 		list_del(&queue_req->list);
 		temp_stream_info->request_q_cnt--;
 	}
 	rc = vfe_dev->buf_mgr->ops->get_buf(vfe_dev->buf_mgr,
-		vfe_dev->pdev->id, bufq_handle, &buf);
+		vfe_dev->pdev->id, bufq_handle, buf_index, &buf);
 
 	if (rc == -EFAULT) {
 		msm_isp_halt_send_error(vfe_dev,
@@ -2973,7 +2975,8 @@ int msm_isp_cfg_axi_stream(struct vfe_device *vfe_dev, void *arg)
 
 static int msm_isp_return_empty_buffer(struct vfe_device *vfe_dev,
 	struct msm_vfe_axi_stream *stream_info, uint32_t user_stream_id,
-	uint32_t frame_id, enum msm_vfe_input_src frame_src)
+	uint32_t frame_id, uint32_t buf_index,
+	enum msm_vfe_input_src frame_src)
 {
 	int rc = -1;
 	struct msm_isp_buffer *buf = NULL;
@@ -3009,7 +3012,7 @@ static int msm_isp_return_empty_buffer(struct vfe_device *vfe_dev,
 
 
 	rc = vfe_dev->buf_mgr->ops->get_buf(vfe_dev->buf_mgr,
-		vfe_dev->pdev->id, bufq_handle, &buf);
+		vfe_dev->pdev->id, bufq_handle, buf_index, &buf);
 	if (rc == -EFAULT) {
 		msm_isp_halt_send_error(vfe_dev, ISP_EVENT_BUF_FATAL_ERROR);
 		return rc;
@@ -3047,7 +3050,7 @@ static int msm_isp_return_empty_buffer(struct vfe_device *vfe_dev,
 
 static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 	struct msm_vfe_axi_stream *stream_info, uint32_t user_stream_id,
-	uint32_t frame_id)
+	uint32_t frame_id, uint32_t buf_index)
 {
 	struct msm_vfe_axi_stream_request_cmd stream_cfg_cmd;
 	struct msm_vfe_frame_request_queue *queue_req;
@@ -3100,7 +3103,7 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].active);
 
 		rc = msm_isp_return_empty_buffer(vfe_dev, stream_info,
-			user_stream_id, frame_id, frame_src);
+			user_stream_id, frame_id, buf_index, frame_src);
 		if (rc < 0)
 			pr_err("%s:%d failed: return_empty_buffer src %d\n",
 				__func__, __LINE__, frame_src);
@@ -3115,7 +3118,7 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 			stream_info->stream_id);
 
 		rc = msm_isp_return_empty_buffer(vfe_dev, stream_info,
-			user_stream_id, frame_id, frame_src);
+			user_stream_id, frame_id, buf_index, frame_src);
 		if (rc < 0)
 			pr_err("%s:%d failed: return_empty_buffer src %d\n",
 				__func__, __LINE__, frame_src);
@@ -3145,6 +3148,7 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
 			user_stream_id, queue_req->buff_queue_id);
 		return 0;
 	}
+	queue_req->buf_index = buf_index;
 	queue_req->cmd_used = 1;
 
 	stream_info->request_q_idx =
@@ -3483,7 +3487,8 @@ int msm_isp_update_axi_stream(struct vfe_device *vfe_dev, void *arg)
 				update_info->stream_handle)];
 			rc = msm_isp_request_frame(vfe_dev, stream_info,
 				update_info->user_stream_id,
-				update_info->frame_id);
+				update_info->frame_id,
+				MSM_ISP_INVALID_BUF_INDEX);
 			if (rc)
 				pr_err("%s failed to request frame!\n",
 					__func__);
@@ -3527,6 +3532,7 @@ int msm_isp_update_axi_stream(struct vfe_device *vfe_dev, void *arg)
 		}
 		break;
 	}
+
 	default:
 		pr_err("%s: Invalid update type\n", __func__);
 		return -EINVAL;
