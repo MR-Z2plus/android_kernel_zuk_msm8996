@@ -608,6 +608,9 @@ static long msm_camera_buf_mgr_fetch_buf_info(
 	if (!arg || !buf_info32 || !buf_info)
 		return -EINVAL;
 
+	if (!arg || !buf_info32 || !buf_info)
+		return -EINVAL;
+
 	if (copy_from_user(buf_info32, (void __user *)arg,
 				sizeof(struct msm_buf_mngr_info32_t)))
 		return -EFAULT;
