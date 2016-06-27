@@ -605,6 +605,9 @@ static long msm_camera_buf_mgr_fetch_buf_info(
 
 	WARN_ON(!arg || !buf_info32 || !buf_info);
 
+	if (!arg || !buf_info32 || !buf_info)
+		return -EINVAL;
+
 	if (copy_from_user(buf_info32, (void __user *)arg,
 				sizeof(struct msm_buf_mngr_info32_t)))
 		return -EFAULT;
@@ -628,6 +631,8 @@ static long msm_camera_buf_mgr_update_buf_info(
 
 	WARN_ON(!arg || !buf_info32 || !buf_info);
 
+	if (!arg || !buf_info32 || !buf_info)
+		return -EINVAL;
 
 	buf_info32->session_id = buf_info->session_id;
 	buf_info32->stream_id = buf_info->stream_id;
