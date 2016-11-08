@@ -832,7 +832,9 @@ static int msm_jpegdma_qbuf(struct file *file, void *fh,
 	int ret;
 
 	msm_jpegdma_cast_long_to_buff_ptr(buf->m.userptr, &up_buff);
+
 	mutex_lock(&ctx->lock);
+
 	if (!access_ok(VERIFY_READ, up_buff,
 		sizeof(struct msm_jpeg_dma_buff)) ||
 		get_user(kp_buff.fd, &up_buff->fd) ||
